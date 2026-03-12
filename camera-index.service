@@ -1,0 +1,15 @@
+[Unit]
+Description=Camera Index Dashboard
+After=multi-user.target
+
+[Service]
+Type=simple
+User=pinchevs
+WorkingDirectory=/home/pinchevs/Desktop/camera-apps
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/usr/bin/python3 /home/pinchevs/Desktop/camera-apps/camera_index.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

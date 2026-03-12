@@ -1,0 +1,18 @@
+# Capture output folders
+raw_captures/
+pixmix_captures/
+slit_scan_test/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Logs
+*.log
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db
