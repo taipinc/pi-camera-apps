@@ -95,7 +95,7 @@ def list_photos():
                     "app": app_label,
                 })
     photos.sort(key=lambda p: p["modified_timestamp"], reverse=True)
-    return JSONResponse(photos[:50])
+    return JSONResponse(photos[:10])
 
 
 @app.get("/photo/{filepath:path}")

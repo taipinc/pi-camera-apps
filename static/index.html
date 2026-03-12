@@ -132,6 +132,7 @@ const appButtons = document.querySelectorAll('[data-app]');
 const captureBtn = document.getElementById('capture-btn');
 
 let currentApp = null;
+let lastStreamApp = null;
 let galleryTimer = null;
 
 // --- Status polling ---
@@ -139,28 +140,32 @@ async function pollStatus() {
   try {
     const r = await fetch('/status');
     const d = await r.json();
-    currentApp = d.active_app_name;
+    const newApp = d.active_app_name;
 
-    // Update stream visibility
-    if (currentApp && d.frame_available) {
-      if (streamImg.style.display === 'none') {
-        streamImg.src = '/stream?' + Date.now();
-      }
+    // Reconnect stream only when active app changes
+    if (newApp && newApp !== lastStreamApp) {
+      streamImg.src = '/stream?' + Date.now();
       streamImg.style.display = 'block';
       placeholder.style.display = 'none';
-    } else {
+      lastStreamApp = newApp;
+    } else if (newApp && lastStreamApp) {
+      // Same app still active — keep stream running, don't touch src
+    } else if (!newApp) {
       streamImg.style.display = 'none';
       streamImg.src = '';
       placeholder.style.display = 'block';
-      placeholder.textContent = currentApp ? 'Waiting for frames...' : 'No active app';
+      placeholder.textContent = 'No active app';
+      lastStreamApp = null;
     }
+
+    currentApp = newApp;
 
     // Update button highlights
     appButtons.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.app === currentApp);
     });
   } catch (e) {
-    // ignore
+    // ignore network errors
   }
 }
 
@@ -169,8 +174,11 @@ async function switchApp(name) {
   const btn = document.querySelector(`[data-app="${name}"]`);
   flashButton(btn);
   try {
-    await fetch('/switch/' + name, { method: 'POST' });
-  } catch (e) {}
+    const r = await fetch('/switch/' + name, { method: 'POST' });
+    if (!r.ok) throw new Error('switch failed');
+  } catch (e) {
+    flashError(btn);
+  }
   setTimeout(pollStatus, 500);
 }
 
@@ -178,9 +186,11 @@ async function switchApp(name) {
 async function doCapture() {
   flashButton(captureBtn);
   try {
-    await fetch('/capture', { method: 'POST' });
-  } catch (e) {}
-  // Refresh gallery after a short delay (capture takes time)
+    const r = await fetch('/capture', { method: 'POST' });
+    if (!r.ok) throw new Error('capture failed');
+  } catch (e) {
+    flashError(captureBtn);
+  }
   setTimeout(loadGallery, 3000);
 }
 
@@ -188,6 +198,12 @@ async function doCapture() {
 function flashButton(btn) {
   btn.classList.add('pressed');
   setTimeout(() => btn.classList.remove('pressed'), 200);
+}
+
+function flashError(btn) {
+  btn.style.borderColor = '#f44';
+  btn.style.color = '#f44';
+  setTimeout(() => { btn.style.borderColor = ''; btn.style.color = ''; }, 1000);
 }
 
 // --- Gallery ---
